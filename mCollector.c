@@ -9,6 +9,7 @@
 #include "nameresolver.h"
 #include "embedded_assets.h"
 #include <stdio.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -920,8 +921,13 @@ static void handle_request(struct mg_connection *c, int ev, void *ev_data) {
                 char path[512];
                 snprintf(path, sizeof(path), "%s/%.*s", s_upload_dir,
                          (int)flen, fname);
-                FILE *fp = fopen(path, "wb");
+                FILE *fp = fopen(path, "wbx");
                 if (!fp) {
+                    if (errno == EEXIST) {
+                        err = "Upload filename already exists\n";
+                        err_status = 409;
+                        break;
+                    }
                     err = "Write failed\n";
                     err_status = 500;
                     break;
@@ -1175,6 +1181,3 @@ int main(int argc, char **argv) {
     mg_mgr_free(&mgr);
     return 0;
 }
-
-
-
